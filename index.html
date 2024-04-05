@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代办事项列表-AImaibo.COM</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+  }
+  .container {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  h1 {
+    text-align: center;
+  }
+  form {
+    display: flex;
+    margin-bottom: 20px;
+  }
+  form input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px 0 0 5px;
+  }
+  form select {
+    padding: 11px 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 0 5px 5px 0;
+    background-color: #f9f9f9;
+  }
+  form button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  li {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+  }
+  li span {
+    flex: 1;
+  }
+  .completed {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+    .delete-btn {
+    background-color: #dc3545;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+    .complete-btn {
+    background-color: #156541;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>待办列表</h1>
+    <p>本页采用Web Storage API的localStorage在您的浏览器中存储数据，既能在页面重新加载时保持一定的数据持久性，又能避免上传数据到服务器涉及您的隐私。</p><p>星级代表待办事项紧急程度，如您已经办结，可以点击办结按钮添加横线标注。如果您办结后不想存留这行数据可以点击按钮删除。</p>
+
+  <form id="todo-form">
+    <input type="text" id="todo-input" placeholder="请输入您待办的事项">
+    <select id="priority">
+      <option value="1">⭐</option>
+      <option value="2">⭐⭐⭐</option>
+      <option value="3">⭐⭐⭐⭐⭐</option>
+    </select>
+    <button type="submit">添加</button>
+  </form>
+  <ul id="todo-list"></ul>
+</div>
+
+<script>
+  const todoForm = document.getElementById('todo-form');
+  const todoInput = document.getElementById('todo-input');
+  const prioritySelect = document.getElementById('priority');
+  const todoList = document.getElementById('todo-list');
+
+  // Load todos from localStorage when the page loads
+  window.addEventListener('load', function() {
+    const todos = JSON.parse(localStorage.getItem('todos')) || [];
+    todos.forEach(todo => {
+      const todoItem = createTodoItem(todo.text, todo.priority, todo.completed);
+      todoList.appendChild(todoItem);
+    });
+  });
+
+  todoForm.addEventListener('submit', function(event) {
+    event.preventDefault();
+    const todoText = todoInput.value.trim();
+    if (todoText === '') return;
+    const priorityValue = prioritySelect.value;
+    const todoItem = createTodoItem(todoText, priorityValue);
+    todoList.appendChild(todoItem);
+    saveTodoToLocalStorage(todoText, priorityValue);
+    todoInput.value = '';
+  });
+
+function createTodoItem(todoText, priority, completed = false) {
+    const li = document.createElement('li');
+    const spanText = document.createElement('span');
+    spanText.textContent = todoText;
+    const spanPriority = document.createElement('span');
+    spanPriority.textContent = getPriorityLabel(priority);
+    const completeBtn = document.createElement('button');
+    completeBtn.textContent = '办结';
+    completeBtn.className = 'complete-btn';
+    if (completed) {
+      spanText.classList.add('completed');
+    }
+    completeBtn.addEventListener('click', function() {
+      spanText.classList.toggle('completed');
+      updateTodoStatus(li, todoText);
+    });
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '删除';
+    deleteBtn.className = 'delete-btn';
+    deleteBtn.addEventListener('click', function() {
+      todoList.removeChild(li);
+      deleteTodoFromLocalStorage(todoText);
+    });
+    li.appendChild(spanText);
+    li.appendChild(spanPriority);
+    li.appendChild(completeBtn);
+    li.appendChild(deleteBtn);
+    return li;
+}
+
+  function getPriorityLabel(priority) {
+    switch (parseInt(priority)) {
+      case 1:
+        return '⭐';
+      case 2:
+        return '⭐⭐⭐';
+      case 3:
+        return '⭐⭐⭐⭐⭐';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  function saveTodoToLocalStorage(text, priority) {
+    const todos = JSON.parse(localStorage.getItem('todos')) || [];
+    todos.push({ text, priority, completed: false });
+    localStorage.setItem('todos', JSON.stringify(todos));
+  }
+
+  function updateTodoStatus(todoElement, todoText) {
+    const todos = JSON.parse(localStorage.getItem('todos')) || [];
+    const index = todos.findIndex(todo => todo.text === todoText);
+    if (index !== -1) {
+      todos[index].completed = todoElement.classList.contains('completed');
+      localStorage.setItem('todos', JSON.stringify(todos));
+    }
+  }
+
+  function deleteTodoFromLocalStorage(todoText) {
+    const todos = JSON.parse(localStorage.getItem('todos')) || [];
+    const filteredTodos = todos.filter(todo => todo.text !== todoText);
+    localStorage.setItem('todos', JSON.stringify(filteredTodos));
+  }
+</script>
+
+</body>
+</html>
